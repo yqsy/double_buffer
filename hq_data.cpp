@@ -66,6 +66,10 @@ HqData::HqData() {
     current_buffer_ = &buffer_a_;
 }
 
+HqData::~HqData() {
+    loading_thread_->detach();
+}
+
 HqData::HqBuffer* HqData::GetFreeBuffer() {
     if (current_buffer_ == &buffer_a_) {
         return &buffer_b_;

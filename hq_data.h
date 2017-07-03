@@ -28,6 +28,8 @@ public:
 private:
     HqData();
 
+    ~HqData();
+
     HqBuffer* GetFreeBuffer();
 
     void SwitchBuffer();
