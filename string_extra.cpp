@@ -40,3 +40,19 @@ bool GetSplitStringPosition(const std::string& str, const std::string& separate,
 
     return false;
 }
+
+std::vector<std::string> split(const std::string& str, char c) {
+    std::vector<std::string> vec;
+    std::string buffer("");
+    for (const auto& i : str)
+        if (i != c) {
+            buffer += i;
+        } else {
+            vec.push_back(std::move(buffer));
+            buffer = "";
+        }
+    if (buffer != "") {
+        vec.push_back(std::move(buffer));
+    }
+    return vec;
+}

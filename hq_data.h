@@ -7,6 +7,7 @@
 #include <memory>
 #include <chrono>
 #include <mutex>
+#include <string>
 
 
 class HqData {
@@ -25,19 +26,11 @@ public:
     std::string ReadFastHq(const char* zqdm);
 
 private:
-    HqData() {
-        hq_file_ = "./mktdt00.txt";
-        interval_ms_ = std::chrono::milliseconds(3000);
-        current_buffer_ = &buffer_a_;
-    }
+    HqData();
 
-private:
     HqBuffer* GetFreeBuffer();
 
-    HqBuffer* GetCurrentBuffer();
-
     void SwitchBuffer();
-
 private:
     std::string hq_file_;
 
@@ -46,11 +39,7 @@ private:
 private:
     HqBuffer buffer_a_;
 
-    std::mutex mutex_a_;
-
     HqBuffer buffer_b_;
-
-    std::mutex mutex_b_;
 
     HqBuffer* current_buffer_;
 

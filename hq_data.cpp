@@ -1,5 +1,9 @@
 #include "hq_data.h"
 
+#include <fstream>
+
+#include "string_extra.h"
+
 HqData& HqData::instance() {
     static HqData hq_data;
     return hq_data;
@@ -14,13 +18,30 @@ void HqData::SetInterval(int ms) {
 }
 
 void HqData::StartReading() {
+
     loading_thread_ = std::make_shared<std::thread>([this] {
         for (;;) {
+            HqBuffer* free_buffer = GetFreeBuffer();
+
+            std::ifstream infile(hq_file_);
+
+            std::string line;
+
+            int current_line = 0;
+            while (std::getline(infile, line)) {
+                current_line++;
+                if (current_line == 1) {
+                    continue;
+                }
+
+                std::string zq_code;
+                if (GetSplitStringPosition(line, "|", 2, &zq_code)) {
+                    (*free_buffer)[zq_code] = line;
+                }
+            }
+
             {
-                HqBuffer* free_buf = GetFreeBuffer();
-
-                // Lock and read data into free_buf
-
+                std::lock_guard<std::mutex> lg(mutex_);
                 SwitchBuffer();
             }
 
@@ -30,36 +51,34 @@ void HqData::StartReading() {
 }
 
 std::string HqData::ReadFastHq(const char* zqdm) {
-    
+    std::lock_guard<std::mutex> lg(mutex_);
+    auto iter = current_buffer_->find(zqdm);
+    if (iter != current_buffer_->end()) {
+        return iter->second;
+    } else {
+        return "";
+    }
+}
 
-    HqBuffer* current_buf = GetCurrentBuffer();
-
-    // Lock find in map and reutrn read
-
-    return "";
+HqData::HqData() {
+    hq_file_ = "./mktdt00.txt";
+    interval_ms_ = std::chrono::milliseconds(3000);
+    current_buffer_ = &buffer_a_;
 }
 
 HqData::HqBuffer* HqData::GetFreeBuffer() {
-    std::lock_guard<std::mutex> lg(mutex_);
-    if (current_buffer_ == &buffer_a_)
+    if (current_buffer_ == &buffer_a_) {
         return &buffer_b_;
-    else
+    } else {
         return &buffer_a_;
-}
-
-HqData::HqBuffer* HqData::GetCurrentBuffer() {
-    std::lock_guard<std::mutex> lg(mutex_);
-    if (current_buffer_ == &buffer_a_)
-        return &buffer_a_;
-    else
-        return &buffer_b_;
+    }
 }
 
 void HqData::SwitchBuffer() {
-    std::lock_guard<std::mutex> lg(mutex_);
-    if (current_buffer_ == &buffer_a_)
+    if (current_buffer_ == &buffer_a_) {
         current_buffer_ = &buffer_b_;
-    else
+    } else {
         current_buffer_ = &buffer_a_;
+    }
 }
 
